@@ -42,6 +42,18 @@ pub async fn create_todo(client: &Client, title: String) -> Result<TodoList, io:
         .ok_or(io::Error::new(io::ErrorKind::Other, "Error creating todo list"))
 }
 
+pub async fn create_todo_item(client: &Client, title: String, list_id: i32) -> Result<TodoItem, io::Error> {
+    let statement = client.prepare("INSERT INTO todo_item (title, checked, list_id) VALUES ($1, false, $2) RETURNING id, title, checked, list_id").await.unwrap();
+    client.query(&statement, &[&title, &list_id])
+        .await
+        .expect("Error creating todo item")
+        .iter()
+        .map(|row| TodoItem::from_row_ref(row).unwrap())
+        .collect::<Vec<TodoItem>>()
+        .pop()
+        .ok_or(io::Error::new(io::ErrorKind::Other, "Error creating todo item"))
+}
+
 pub async fn check_item(client: &Client, list_id: i32, item_id: i32) -> Result<(), io::Error> {
 
     let statement = client.prepare("UPDATE todo_item SET checked = true WHERE list_id = $1 AND id = $2 AND checked = false").await.unwrap();

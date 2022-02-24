@@ -1,4 +1,4 @@
-use crate::models::{Status, CreateTodoList, ResultResponse};
+use crate::models::{Status, CreateTodoList, CreateTodoItem, ResultResponse};
 use crate::db;
 use std::io::ErrorKind::Other;
 use deadpool_postgres::{Pool, Client};
@@ -35,6 +35,16 @@ pub async fn create_todo(db_pool: web::Data<Pool>, body: web::Json<CreateTodoLis
 
     match result {
         Ok(todo) => HttpResponse::Ok().json(todo),
+        Err(_) => HttpResponse::InternalServerError().into()
+    }
+}
+
+pub async fn create_todo_item(db_pool: web::Data<Pool>, body: web::Json<CreateTodoItem>) -> impl Responder {
+    let client: Client = db_pool.get().await.expect("Error connecting to database");
+    let result = db::create_todo_item(&client, body.title.clone(), body.list_id).await;
+
+    match result {
+        Ok(todo_item) => HttpResponse::Ok().json(todo_item),
         Err(_) => HttpResponse::InternalServerError().into()
     }
 }
